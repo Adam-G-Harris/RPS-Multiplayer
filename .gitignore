@@ -26,3 +26,9 @@ Temporary Items
 !.vscode/launch.json
 !.vscode/extensions.json
 .history
+
+.firebaserc
+firebase-debug.log
+.firebase.json
+firestore.indexes.json
+firestore.rules
