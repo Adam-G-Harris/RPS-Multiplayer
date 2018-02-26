@@ -13,18 +13,35 @@ html(lang="en")
 
     body
 
-        #output.
+        // Real time update method
+
+        //#output.
 
             Hotdog Status:
 
-        input(type="text", id="userInput")
+        //input(type="text", id="userInput")
 
-        button(type="submit" id="save").
+        //button(type="submit" id="save").
 
             Save
 
+        // -----------------------------------------------------------------
+
+        // User authentication method
+
+        input#txtEmail(type="email", name="userEmail" placeholder="Email")
+
+        input#txtPassword(type="password", name="userPassword" placeholder="Password")
+
+        button#btnLogin Login
+
+        button#btnSignUp Sign up
+
+        button#btnLogout(style="display: none;") Logout
+
         // Only needed Firebase features
         script(src="https://www.gstatic.com/firebasejs/4.10.1/firebase-app.js")
+        script(src="https://www.gstatic.com/firebasejs/4.10.1/firebase-auth.js")
         script(src="https://www.gstatic.com/firebasejs/4.10.1/firebase-firestore.js")
         script(src="https://www.gstatic.com/firebasejs/4.10.1/firebase-messaging.js")
 
