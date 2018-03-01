@@ -1,6 +1,8 @@
 window.onload = () => {
 
-    // Firebase configuration
+    // -------------------- Start Firebase configuration -------------------- //
+
+    // Firebase keys & values
     const config = {
         apiKey: "AIzaSyB-i_H3NI98S3d-Fp6n0_CvlCI3-NMLlEk",
         authDomain: "rps-multiplayer-51545.firebaseapp.com",
@@ -19,6 +21,10 @@ window.onload = () => {
     // Authentication
     const auth = firebase.auth();
 
+    // -------------------- End Firebase configuration -------------------- //
+
+    // -------------------- Start user authentication -------------------- //
+
     // User inputs
     const txtEmail = document.getElementById('txtEmail');
     const txtPassword = document.getElementById('txtPassword');
@@ -28,6 +34,9 @@ window.onload = () => {
     const btnSignUp = document.getElementById('btnSignUp');
     const btnLogout = document.getElementById('btnLogout');
 
+    // User display name
+    const displayName = document.getElementById('user-display-name'); // on sign up make a new document in the 'users' collection containing user name
+
     // User login event
     btnLogin.addEventListener('click', e => {
 
@@ -36,10 +45,8 @@ window.onload = () => {
         const password = txtPassword.value;
 
         // User login attempt
-        const promise = auth.signInWithEmailAndPassword(email, password);
-
-        // Login error catch
-        promise.catch(e => console.log(e.message));
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .catch(e => console.log(e.message));
     });
 
     // User sign up event
@@ -50,10 +57,12 @@ window.onload = () => {
         const password = txtPassword.value;
 
         // User sign up attempt
-        const promise = auth.createUserWithEmailAndPassword(email, password);
+        firebase.auth().createUserWithEmailAndPassword(email, password)
+            .then(function (user) {
 
-        // sign up error catch
-        promise.catch(e => console.log(e.message));
+                user.metadata.name = 'Tom';
+            })
+            .catch(e => console.log(e.message));
     });
 
     // User logout event
@@ -72,19 +81,20 @@ window.onload = () => {
             // Display logout button
             btnLogout.style.display = 'block';
 
-            console.log(user);
+            // Display user alias
+            displayName.textContent = user.metadata.name; // make a document for each person
 
-            // User isn't in the cloud
         } else {
 
             // Hide logout button
             btnLogout.style.display = 'none';
 
-            console.log("You're not currently logged in.");
+            // Display null user alias
+            displayName.textContent = 'Not logged in';
         }
     });
 
-    // -----------------------------------------------------------------
+    // -------------------- End user authentication -------------------- //
 
     // Real time update method
 
@@ -119,4 +129,5 @@ window.onload = () => {
     };
 
     getRealTimeUpdates();*/
+
 };
