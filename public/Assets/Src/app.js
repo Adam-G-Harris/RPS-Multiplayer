@@ -2,7 +2,6 @@ window.onload = () => {
 
     // -------------------- Start Firebase configuration -------------------- //
 
-    // Firebase keys & values
     const config = {
         apiKey: "AIzaSyB-i_H3NI98S3d-Fp6n0_CvlCI3-NMLlEk",
         authDomain: "rps-multiplayer-51545.firebaseapp.com",
@@ -35,16 +34,17 @@ window.onload = () => {
     const btnLogout = document.getElementById('btnLogout');
 
     // User display name
-    const displayName = document.getElementById('user-display-name'); // on sign up make a new document in the 'users' collection containing user name
+    const displayName = document.getElementById('user-display-name');
+
+    // Container for users
+    let currentUser = null;
 
     // User login event
     btnLogin.addEventListener('click', e => {
 
-        // User email & password values
         const email = txtEmail.value;
         const password = txtPassword.value;
 
-        // User login attempt
         firebase.auth().signInWithEmailAndPassword(email, password)
             .catch(e => console.log(e.message));
     });
@@ -52,7 +52,6 @@ window.onload = () => {
     // User sign up event
     btnSignUp.addEventListener('click', e => {
 
-        // User email & password values
         const email = txtEmail.value;
         const password = txtPassword.value;
 
@@ -60,7 +59,9 @@ window.onload = () => {
         firebase.auth().createUserWithEmailAndPassword(email, password)
             .then(function (user) {
 
-                user.metadata.name = 'Tom';
+                const name = prompt('What is your name?');
+
+                return setup(user, name);
             })
             .catch(e => console.log(e.message));
     });
@@ -68,66 +69,237 @@ window.onload = () => {
     // User logout event
     btnLogout.addEventListener('click', e => {
 
-        // User logout
         firebase.auth().signOut();
     });
 
     // Real time authentication state listener
-    firebase.auth().onAuthStateChanged(user => {
+    firebase.auth().onAuthStateChanged(function (user) {
 
-        // User is in the cloud
         if (user) {
 
-            // Display logout button
+            currentUser = user;
+
             btnLogout.style.display = 'block';
 
-            // Display user alias
-            displayName.textContent = user.metadata.name; // make a document for each person
+            // Querying user data
+            setName(displayName);
 
         } else {
 
-            // Hide logout button
+            currentUser = null;
+
             btnLogout.style.display = 'none';
 
-            // Display null user alias
             displayName.textContent = 'Not logged in';
         }
     });
 
     // -------------------- End user authentication -------------------- //
 
-    // Real time update method
+    // -------------------- Start data update method -------------------- //
 
-    /*const docSamples = firestore.doc('samples/sandwichData');
-    const display = document.getElementById('output');
-    const userInput = document.getElementById('userInput');
-    const save = document.getElementById('save');
+    // Player name displays
+    const player1Name = document.getElementById('player-1-name');
+    const player2Name = document.getElementById('player-2-name');
 
-    save.addEventListener('click', function () {
-        const userText = userInput.value;
-        console.log(`I am going to save ${userText} to Firestore.`);
-        docSamples.set({
-            hotDogStatus: userText
-        }).then(function () {
-            console.log('Status updated!');
-        }).catch(function (error) {
-            console.log('Error: ' + error);
+    // Player info displays
+    const slotDisplayInfo = document.getElementById('results-display-container');
+    const slotOneInfo = document.getElementById('player-1-info');
+    const slotTwoInfo = document.getElementById('player-2-info');
+
+    // Firestore collection & document references
+    const slotDisplay = firestore.doc('slots/display');
+    const colUsers = firestore.collection('users');
+    const colSlots = firestore.collection('slots');
+    const slot1 = firestore.doc('slots/slot1');
+    const slot2 = firestore.doc('slots/slot2');
+
+    // Default slot displays
+    function defaultSlots() {
+
+        slot1.set({
+            name: 'Player 1',
+            main: 'Waiting on player to join slot 1...'
         });
-    });
 
-    const getRealTimeUpdates = function () {
+        slot2.set({
+            name: 'Player 2',
+            main: 'Waiting on player to join slot 2...'
+        });
 
-        docSamples.onSnapshot(function (doc) {
+        slotDisplay.set({
+            main: `<button id='btn-join' class='btn-join'>Join Lobby</button>
+            <div>Game will start when two players have joined.</div>`
+        });
+    }
+
+    // Auto updates slot displays
+    function updateSlots() {
+
+        slot1.onSnapshot(function (doc) {
 
             if (doc && doc.exists) {
 
-                let temp = doc.data();
+                const temp = doc.data();
 
-                display.textContent = `Hotdog Status: ${temp.hotDogStatus}`;
+                player1Name.innerHTML = temp.name;
+
+                slotOneInfo.innerHTML = temp.main;
+            }
+        });
+
+        slot2.onSnapshot(function (doc) {
+
+            if (doc && doc.exists) {
+
+                const temp = doc.data();
+
+                player2Name.innerHTML = temp.name;
+
+                slotTwoInfo.innerHTML = temp.main;
+            }
+        });
+
+        slotDisplay.onSnapshot(function (doc) {
+
+            if (doc && doc.exists) {
+
+                const temp = doc.data();
+
+                slotDisplayInfo.innerHTML = temp.main;
             }
         });
     };
 
-    getRealTimeUpdates();*/
+    // -------------------- End data update method -------------------- //
 
+    // -------------------- Start data field -------------------- //
+
+    slotDisplayInfo.addEventListener('click', joinHandler);
+
+    // Setting slot states to empty
+    let slot1Filled = false;
+    let slot2Filled = false;
+
+    // Join lobby handler
+    function joinHandler(e) {
+
+        if (!e.target.classList.contains('btn-join')) {
+
+            return;
+        }
+
+        if (currentUser === null) {
+
+            return;
+        }
+
+        if (slot1Filled === false) {
+
+            addPlayer(slot1);
+
+        } else if (slot2Filled === false) {
+
+            addPlayer(slot2);
+
+            setDisplay();
+
+        } else {
+
+            alert('Sorry it looks like both spots are filled for now, try again in a few minutes!');
+
+            return;
+        }
+
+        return;
+    }
+
+    // -------------------- End data field -------------------- //
+
+    // -------------------- Start helper functions -------------------- //
+
+    function addPlayer(addTo) {
+
+        addTo === slot1 ? slot1Filled = true : slot2Filled = true;
+
+        let temp = colUsers.where('id', '==', currentUser.uid).name;
+
+        console.log(temp);
+
+        addTo.set({
+            main: 'null',
+            name: '',
+            player: 'currentUser'
+        });
+    }
+
+    function removePlayer(removeFrom) {
+
+    }
+
+    // Counter
+    let num = 1;
+
+    // Info display reset
+    function setDisplay() {
+
+        if (num % 2 === 0) {
+
+            slotDisplay.set({
+                main: `Player 2's turn`
+            });
+
+        } else {
+
+            slotDisplay.set({
+                main: `Player 1's turn`
+            });
+        }
+
+        num += 1;
+    }
+
+    // Finds current user's name
+    function setName(spot) {
+
+        firestore.collection('users').get().then(function (userDocs) {
+
+            userDocs.forEach(function (doc) {
+
+                if (doc.data().id === currentUser.uid) {
+
+                    spot.innerHTML = doc.data().name;
+                }
+            });
+        });
+    }
+
+    // User specific object
+    function setup(user, name) {
+
+        colUsers.add({
+            name: name,
+            id: user.uid,
+            wins: 0,
+            losses: 0
+        });
+    }
+
+    // -------------------- End helper functions -------------------- //
+
+    // -------------------- Start init function -------------------- //
+
+    function init() {
+
+        // Sets slot data to default
+        defaultSlots();
+
+        // Snapshot listeners on all slots
+        updateSlots();
+    }
+
+    // First call on window load
+    init();
+
+    // -------------------- End init function -------------------- //
 };
